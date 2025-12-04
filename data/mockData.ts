@@ -1,4 +1,78 @@
-import Category from '../models/Category';
+import { Category } from '@/models/Category';
+
+export type Banner = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  image: string;
+  cta?: string;
+};
+
+export type Promotion = {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'percentage' | 'fixed' | 'bundle';
+  value?: number; // percentage or fixed amount
+  bundleItems?: string[]; // menuItem ids
+};
+
+export const categories: Category[] = [
+  { id: 'cat-breakfast', name: 'Breakfast' },
+  { id: 'cat-burgers', name: 'Burgers' },
+  { id: 'cat-pizzas', name: 'Pizzas' },
+  { id: 'cat-salads', name: 'Salads' },
+  { id: 'cat-desserts', name: 'Desserts' },
+  { id: 'cat-drinks', name: 'Drinks' },
+  { id: 'cat-specials', name: 'Specials' },
+  { id: 'cat-chef', name: "Chef's Picks" },
+];
+
+export const banners: Banner[] = [
+  {
+    id: 'banner-hero-1',
+    title: 'Festive Flavors Week',
+    subtitle: 'Limited-time seasonal dishes',
+    image: 'https://images.unsplash.com/photo-1543352634-51576c5b3cde?w=1200&h=900&fit=crop&q=70',
+    cta: 'Explore Specials',
+  },
+  {
+    id: 'banner-combo-1',
+    title: 'Burger + Drink Combo',
+    subtitle: 'Save 20% on combos',
+    image: 'https://images.unsplash.com/photo-1550317138-10000687a72b?w=1200&h=900&fit=crop&q=70',
+    cta: 'View Deals',
+  },
+];
+
+export const promotions: Promotion[] = [
+  {
+    id: 'promo-20pct',
+    title: 'Holiday 20% Off',
+    description: 'Applies to desserts and drinks',
+    type: 'percentage',
+    value: 20,
+  },
+  {
+    id: 'promo-fixed-5',
+    title: '$5 Off Orders $30+',
+    description: 'Automatic at checkout',
+    type: 'fixed',
+    value: 5,
+  },
+  {
+    id: 'promo-bundle-burger',
+    title: 'Burger + Drink Bundle',
+    description: 'Classic Burger with any drink',
+    type: 'bundle',
+    bundleItems: ['burger-classic', 'drink-cola', 'drink-iced-tea'],
+  },
+];
+
+export const featuredSets = {
+  chefPicks: ['pizza-truffle', 'salad-quinoa', 'dessert-cheesecake'],
+  seasonal: ['breakfast-french-toast', 'drink-pumpkin-latte'],
+};
 
 const mockCategories: Category[] = [
   {

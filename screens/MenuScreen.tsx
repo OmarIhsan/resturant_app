@@ -1,11 +1,14 @@
+import Shimmer from '@/components/ui/Shimmer';
+import { promotions } from '@/data/mockData';
+import { getCategories, getItemsByCategory } from '@/data/selectors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, FAB, Paragraph, Text, Title, useTheme } from 'react-native-paper';
+import { Badge, Button, Card, FAB, Paragraph, Snackbar, Text, Title, useTheme } from 'react-native-paper';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { useCart } from '../contexts/CartContext';
-import mockCategories from '../data/mockData';
 
 type RootStackParamList = {
   Home: undefined;
@@ -17,12 +20,13 @@ type MenuScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'M
 
 interface MenuItemProps {
   item: {
-    id: number;
+    id: string;
     name: string;
     description: string;
     price: number;
-    imageUrl: string;
-    categoryId: number;
+    currency: string;
+    image: any;
+    categoryId: string;
   };
 }
 
@@ -30,16 +34,21 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
   const [quantity, setQuantity] = useState(0);
   const { dispatch } = useCart();
   const theme = useTheme();
+  const [snackVisible, setSnackVisible] = useState(false);
 
   const handleAddToCart = () => {
     dispatch({ type: 'ADD_ITEM', payload: item });
     setQuantity(prev => prev + 1);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setSnackVisible(true);
   };
 
   const handleRemoveFromCart = () => {
     if (quantity > 0) {
       dispatch({ type: 'REMOVE_ITEM', payload: item.id });
       setQuantity(prev => prev - 1);
+      Haptics.selectionAsync().catch(() => {});
+      setSnackVisible(true);
     }
   };
 
@@ -47,11 +56,32 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
     <Card style={styles.card}>
       <Card.Content>
         <View style={styles.cardContent}>
-          <Image source={{ uri: item.imageUrl }} style={styles.image} />
+          <Image source={item.image} style={styles.image} />
           <View style={styles.itemInfo}>
             <Title style={styles.title}>{item.name}</Title>
             <Paragraph style={styles.description}>{item.description}</Paragraph>
             <Text style={styles.price}>{item.price.toFixed(2)} دينار</Text>
+            {/* Single most relevant promotion badge */}
+            {(() => {
+              // Prioritize bundle over percentage
+              const bundle = promotions.find((p) => p.type === 'bundle' && (p.bundleItems || []).includes(item.id));
+              const percentage = promotions.find(
+                (p) => p.type === 'percentage' && (item.categoryId === 'cat-drinks' || item.categoryId === 'cat-desserts')
+              );
+              const relevant = bundle || percentage;
+              if (!relevant) return null;
+              return (
+                <Badge
+                  style={{
+                    alignSelf: 'flex-start',
+                    marginBottom: 6,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  {relevant.title}
+                </Badge>
+              );
+            })()}
             <View style={styles.quantityContainer}>
               <Button
                 mode="outlined"
@@ -73,31 +103,81 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
           </View>
         </View>
       </Card.Content>
+      <Snackbar visible={snackVisible} onDismiss={() => setSnackVisible(false)} duration={1200}>
+        {quantity > 0 ? 'Updated cart' : 'Removed from cart'}
+      </Snackbar>
     </Card>
   );
 };
 
 const MenuScreen: React.FC = () => {
   const [index, setIndex] = useState(0);
+  const categories = useMemo(() => getCategories(), []);
   const [routes] = useState(
-    mockCategories.map(category => ({
-      key: category.id.toString(),
+    categories.map(category => ({
+      key: category.id,
       title: category.name,
     }))
   );
   const navigation = useNavigation<MenuScreenNavigationProp>();
   const theme = useTheme();
   const { getTotalItems } = useCart();
+  const [loading, setLoading] = useState(true);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  // Loading state shimmer handled via Shimmer component
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  // No inline Animated shimmer; standardized via Shimmer component
 
   const renderScene = ({ route }: { route: { key: string; title: string } }) => {
-    const category = mockCategories.find(cat => cat.id.toString() === route.key);
-    if (!category) return null;
-
+    let items = getItemsByCategory(route.key);
+    if (activeFilters.length) {
+      items = items.filter((m: any) => (m.tags || []).some((t: string) => activeFilters.includes(t)));
+    }
     return (
       <ScrollView style={styles.scene}>
-        {category.menuItems.map(item => (
-          <MenuItem key={item.id} item={item} />
-        ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar}>
+          {['Vegan', 'Gluten-Free', 'Spicy'].map((tag) => {
+            const active = activeFilters.includes(tag);
+            return (
+              <Button
+                key={tag}
+                mode={active ? 'contained' : 'outlined'}
+                style={styles.filterChip}
+                onPress={() => {
+                  setActiveFilters((prev) =>
+                    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                  );
+                }}
+              >
+                {tag}
+              </Button>
+            );
+          })}
+        </ScrollView>
+
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <Card key={`skeleton-${i}`} style={styles.card}>
+                <Card.Content>
+                  <View style={styles.cardContent}>
+                    <Shimmer style={[styles.image, styles.skeleton]} />
+                    <View style={{ flex: 1 }}>
+                      <Shimmer style={[styles.skeletonLine, { width: '60%' }]} />
+                      <Shimmer style={[styles.skeletonLine, { width: '90%' }]} />
+                      <Shimmer style={[styles.skeletonLine, { width: '40%' }]} />
+                    </View>
+                  </View>
+                </Card.Content>
+              </Card>
+            ))
+          : items.map(item => (
+              <MenuItem key={item.id} item={item as any} />
+            ))}
       </ScrollView>
     );
   };
@@ -143,6 +223,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 8,
   },
+  filterBar: {
+    paddingVertical: 8,
+  },
+  filterChip: {
+    marginRight: 8,
+  },
   card: {
     marginBottom: 16,
     elevation: 2,
@@ -155,6 +241,15 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     marginRight: 16,
+  },
+  skeleton: {
+    backgroundColor: '#e6e6e6',
+  },
+  skeletonLine: {
+    height: 12,
+    backgroundColor: '#e6e6e6',
+    marginBottom: 8,
+    borderRadius: 6,
   },
   itemInfo: {
     flex: 1,

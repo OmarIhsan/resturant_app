@@ -1,14 +1,12 @@
 {
   "expo": {
     "name": "مطعمنا",
-    "slug": "restaurant-app",
+    "slug": "temp-project",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "restaurantapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "sdkVersion": "49.0.0",
     "platforms": ["ios", "android", "web"],
     "assetBundlePatterns": [
       "**/*"
@@ -68,8 +66,11 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "450f8f73-6570-42c9-8253-5bcbd14ad776"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/450f8f73-6570-42c9-8253-5bcbd14ad776"
     }
   }
 }

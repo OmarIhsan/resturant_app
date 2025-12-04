@@ -1,5 +1,5 @@
+import { MenuItem } from '@/models/MenuItem';
 import React, { createContext, ReactNode, useContext, useReducer } from 'react';
-import { MenuItem } from '../data/menuItems';
 
 type CartItem = {
   item: MenuItem;
@@ -13,15 +13,15 @@ type CartState = {
 
 type CartAction =
   | { type: 'ADD_ITEM'; payload: MenuItem }
-  | { type: 'REMOVE_ITEM'; payload: number }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } };
+  | { type: 'REMOVE_ITEM'; payload: string }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } };
 
 interface CartContextType {
   state: CartState;
   dispatch: React.Dispatch<CartAction>;
   getTotalItems: () => number;
-  removeFromCart: (itemId: number) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
+  removeFromCart: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -90,11 +90,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return state.items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const removeFromCart = (itemId: number) => {
+  const removeFromCart = (itemId: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: itemId });
   };
 
-  const updateQuantity = (itemId: number, quantity: number) => {
+  const updateQuantity = (itemId: string, quantity: number) => {
     if (quantity < 1) {
       removeFromCart(itemId);
       return;
